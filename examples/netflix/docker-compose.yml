@@ -2,24 +2,22 @@ version: "3.8"
 
 services:
   frontend:
-    depends_on: 
+    depends_on:
       - backend
-    build: ./frontend
+    build: ./frontend # builda o Dockerfile que está dentro de ./frontend/Dockerfile
     ports:
       - 3000:3000
-
-  backend: 
-    depends_on: 
+  backend:
+    depends_on:
       - db
     build: ./backend
-    ports: 
+    ports:
       - 3001:3001
-    environment: 
+    environment:
       DB_URL: mongodb://db/vidly
     command: ./docker-entrypoint.sh
-
   db:
-    image: mongo:4.0-xenial
+    image: mongo:4.0-xenial # do dockerhub
     ports:
       - 27017:27017
     volumes:
