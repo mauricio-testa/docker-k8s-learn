@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mauricio-test1-db-deployment
+  labels:
+    app: mauricio-test1-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mauricio-test1-db
+  template:
+    metadata:
+      name: mauricio-test1-db-pod
+      labels:
+        app: mauricio-test1-db
+    spec:
+      containers:
+        - name: mauricio-test1-db-container
+          image: mariadb:10.3 # maria db here!
+          imagePullPolicy: IfNotPresent
+          resources:
+              limits:
+                memory: "128Mi"
+                cpu: "500m"
+          env:
+            - name: MARIA_DB_ROOT_PASSWORD
+              value: topSecret
+      restartPolicy: Always
+
+--- 
+
+# expõe a porta do db
+apiVersion: v1
+kind: Service
+metadata:
+  name: mauricio-test1-db-service
+spec:
+  selector:
+    app: mauricio-test1-db
+  ports:
+  - port: 3306
+  type: ClusterIP

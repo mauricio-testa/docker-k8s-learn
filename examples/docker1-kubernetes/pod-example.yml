@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mauricio-test1-pod
+  labels:
+    app: mauricio-test1
+spec:
+  containers:
+    - name: mauricio-test1-container
+      image: mauriciotesta97/docker-test-1:latest
+      imagePullPolicy: IfNotPresent # se não existir vai buscar
+      resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+      env:
+        - name: APP_ENV
+          value: docker
+  restartPolicy: Always # se cair vai restartar automatico

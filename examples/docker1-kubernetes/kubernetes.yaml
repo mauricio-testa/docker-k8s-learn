@@ -1,0 +1,153 @@
+# deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mauricio-test1-deployment
+  namespace: streaming-tests
+  labels:
+    app: mauricio-test1
+  annotations:
+    keel.sh/policy: force # útil para ambiente de testes. sempre que houver push faz deploy
+spec:
+  replicas: 1 # pra escalar a applicação
+  selector:
+    matchLabels: # serve pro deployment encontrar o recurso que está gerenciando
+      app: mauricio-test1 # -------- 1 essa label...
+  template: # exatamente a mesma coisa que tem no pod-example.yml
+    metadata:
+      name: mauricio-test1-pod
+      namespace: streaming-tests
+      labels:
+        app: mauricio-test1 # -------- 2 ...precisa ser igual essa...
+    spec:
+      containers:
+        - name: mauricio-test1-container
+          image: mauriciotesta97/docker-test-1:latest
+          imagePullPolicy: Always
+          resources:
+              limits:
+                memory: "128Mi"
+                cpu: "500m"
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mauricio-test1-secrets
+                  key: DB_PASSWORD
+          envFrom:
+          - configMapRef:
+              name: mauricio-test1-configmap
+          volumeMounts:
+          - name: mauricio-test1-pv
+            mountPath: /app/user_data
+      volumes:
+      - name: mauricio-test1-pv
+        persistentVolumeClaim:
+          claimName: mauricio-test1-pvc
+      restartPolicy: Always
+
+---
+
+# service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mauricio-test1-service
+  namespace: streaming-tests
+spec:
+  selector:
+    app: mauricio-test1 # -------- 3 ... e essa
+  ports:
+    - port: 8080
+  type: ClusterIP
+
+---
+
+# ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mauricio-test1-ingress
+  namespace: streaming-tests
+  labels:
+    name: mauricio-test1
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt"
+spec:
+  rules:
+  - host: mauricio-test1.kub.app.builderall.io
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: mauricio-test1-service
+            port: 
+              number: 8080
+  tls:
+  - hosts:
+    - mauricio-test1.kub.app.builderall.io
+    secretName: mauricio-test1-tls
+
+---
+
+# configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mauricio-test1-configmap
+  namespace: streaming-tests
+data:
+  DB_HOST: 123.123.123.123
+
+---
+
+# secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mauricio-test1-secrets
+  namespace: streaming-tests
+type: Opaque
+data:
+  DB_PASSWORD: YWJj # abc
+
+
+
+
+
+# kubectl apply -f kubernetes.yaml ->> aplica o arquivo (executar sempre que é modificado)
+# kubectl delete -f kubernetes.yaml ->> destroi tudo relacionado ao arquivo
+# kubectl get all
+# kubectl logs <podname>
+# kubectl delete pod <podname>
+
+# pra expor a porta o correto é criar um service e um ingress em cima do service
+# mas para fim de exemplo: kubectl port-forward pod/<podname> 8080:8080
+
+# banco de dados deve ser criado pelo dockerfile
+
+#### CAMADAS ####
+
+##### ingress - gerencia o acesso http EXTERNO a um serviço. O ingress redireciona para o service
+#### service - usado pra definir o acesso interno ao serviço (binding de portas). O IP do serviço nunca muda! então para APIs que não precisam ser acessadas externamentem, não precisa ingress
+#### deployment (gerencia os pods) - vem junto com um replicaset pra gerenciar as replicas da aplicação (redundância)
+### pod (unidade de execução do container)
+## container (instancia de uma imagem)
+# imagem (o aplicativo com todas suas dependências)
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mauricio-test1-pvc
+  namespace: streaming-tests
+spec:
+  storageClassName: nfs-client
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Mi
