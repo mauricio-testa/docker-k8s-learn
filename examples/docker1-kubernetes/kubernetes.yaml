@@ -25,9 +25,12 @@ spec:
           image: mauriciotesta97/docker-test-1:latest
           imagePullPolicy: Always
           resources:
-              limits:
-                memory: "128Mi"
-                cpu: "500m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
           env:
             - name: DB_PASSWORD
               valueFrom:
@@ -35,19 +38,18 @@ spec:
                   name: mauricio-test1-secrets
                   key: DB_PASSWORD
           envFrom:
-          - configMapRef:
-              name: mauricio-test1-configmap
+            - configMapRef:
+                name: mauricio-test1-configmap
           volumeMounts:
-          - name: mauricio-test1-pv
-            mountPath: /app/user_data
+            - name: mauricio-test1-pv
+              mountPath: /app/user_data
       volumes:
-      - name: mauricio-test1-pv
-        persistentVolumeClaim:
-          claimName: mauricio-test1-pvc
+        - name: mauricio-test1-pv
+          persistentVolumeClaim:
+            claimName: mauricio-test1-pvc
       restartPolicy: Always
 
 ---
-
 # service
 apiVersion: v1
 kind: Service
@@ -62,7 +64,6 @@ spec:
   type: ClusterIP
 
 ---
-
 # ingress
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -76,23 +77,22 @@ metadata:
     cert-manager.io/cluster-issuer: "letsencrypt"
 spec:
   rules:
-  - host: mauricio-test1.kub.app.builderall.io
-    http:
-      paths:
-      - pathType: Prefix
-        path: "/"
-        backend:
-          service:
-            name: mauricio-test1-service
-            port: 
-              number: 8080
+    - host: mauricio-test1.kub.app.builderall.io
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: mauricio-test1-service
+                port:
+                  number: 8080
   tls:
-  - hosts:
-    - mauricio-test1.kub.app.builderall.io
-    secretName: mauricio-test1-tls
+    - hosts:
+        - mauricio-test1.kub.app.builderall.io
+      secretName: mauricio-test1-tls
 
 ---
-
 # configmap
 apiVersion: v1
 kind: ConfigMap
@@ -103,7 +103,6 @@ data:
   DB_HOST: 123.123.123.123
 
 ---
-
 # secret
 apiVersion: v1
 kind: Secret
@@ -113,10 +112,6 @@ metadata:
 type: Opaque
 data:
   DB_PASSWORD: YWJj # abc
-
-
-
-
 
 # kubectl apply -f kubernetes.yaml ->> aplica o arquivo (executar sempre que é modificado)
 # kubectl delete -f kubernetes.yaml ->> destroi tudo relacionado ao arquivo
